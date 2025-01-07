@@ -10,6 +10,7 @@ GameScene::~GameScene() {
 	delete enemy_;
 	delete modelSkyDome_;
 	delete debugCamera_;
+	delete fade_;
 }
 
 void GameScene::Initialize() {
@@ -17,6 +18,8 @@ void GameScene::Initialize() {
 	dxCommon_ = DirectXCommon::GetInstance();
 	input_ = Input::GetInstance();
 	audio_ = Audio::GetInstance();
+
+	BGMHandle_ = audio_->LoadWave("./Resources/audio/undersea.wav");
 
 	// デバッグカメラの生成
 	debugCamera_ = new DebugCamera(1280, 720);
@@ -26,10 +29,8 @@ void GameScene::Initialize() {
 	// 軸方向表示が参照するビュープロジェクションを指定する（アドレス渡し）
 	AxisIndicator::GetInstance()->SetTargetCamera(&debugCamera_->GetCamera());
 
-	// プレイヤーのテクスチャ
-	playerTextureHandle_ = TextureManager::Load("white1x1.png");
 	// プレイヤーのモデル
-	playerModel_ = Model::Create();
+	playerModel_ = Model::CreateFromOBJ("player", true);
 	// プレイヤーのワールドトランスフォームの初期化
 	playerWorldTransform_.Initialize();
 	// プレイヤーのカメラの初期化
@@ -39,10 +40,8 @@ void GameScene::Initialize() {
 	// プレイヤーの初期化
 	player_->Initialize(playerModel_, playerTextureHandle_);
 
-	// 敵のテクスチャ
-	enemyTextureHandle_ = TextureManager::Load("red1x1.png");
 	// 敵のモデル
-	enemyModel_ = Model::Create();
+	enemyModel_ = Model::CreateFromOBJ("enemy", true);
 	// 敵のワールドトランスフォームの初期化
 	enemyWorldTransform_.Initialize();
 	// 敵のカメラの初期化
@@ -58,6 +57,11 @@ void GameScene::Initialize() {
 	modelSkyDome_ = Model::CreateFromOBJ("skydome", true);
 	skydome_ = new SkyDome();
 	skydome_->Initialize(modelSkyDome_, &camera_);
+
+	// フェード
+	fade_ = new Fade();
+	fade_->Initialize();
+	fade_->Start(Fade::Status::FadeIn, 1.0f);
 }
 
 void GameScene::CheckAllCollisions() {
@@ -70,32 +74,32 @@ void GameScene::CheckAllCollisions() {
 #pragma region
 	posA = player_->GetWorldPosition();
 	for (EnemyBullet* bullet : enemyBullets) {
-
 		posB = bullet->GetWorldPosition();
-
 		Vector3 subtract = posB - posA;
 		float a = Length(subtract);
 		if (a < 3.0f) {
-
 			player_->OnCollision();
 			bullet->OnCollision();
 		}
 	}
 #pragma endregion
+
+
 #pragma region
 	posA = enemy_->GetWorldPosition();
 	for (PlayerBullet* bullet : playerBullets) {
 		posB = bullet->GetWorldPosition();
 		Vector3 subtract = posB - posA;
 		float a = Length(subtract);
-		if (a < 3.0f) {
+		if (a < 10.0f) {
 			enemy_->OnCollision();
 			bullet->OnCollision();
 		}
 	}
 #pragma endregion
-#pragma region
 
+
+#pragma region
 	for (PlayerBullet* pBullet : playerBullets) {
 		for (EnemyBullet* eBullet : enemyBullets) {
 			posA = pBullet->GetWorldPosition();
@@ -112,6 +116,42 @@ void GameScene::CheckAllCollisions() {
 }
 
 void GameScene::Update() {
+
+	// BGMが再生されていない場合のみ再生する
+	if (!isBGMPlaying_) {
+		audio_->PlayAudio(BGMAudio_, BGMHandle_, true, 0.3f);
+		isBGMPlaying_ = true; // フラグを立てる
+	}
+
+	timer++;
+
+	if (timer >= 1800.0f) {
+		timer = 0.0f;
+		fade_->Start(Fade::Status::FadeOut, 1.0f);
+		phaseFade_ = PhaseFade::kFadoOut;
+	}
+
+	switch (phaseFade_) {
+
+	case GameScene::PhaseFade::kFadeIn:
+		fade_->Update();
+		if (fade_->IsFinished()) {
+			fade_->Stop();
+			phaseFade_ = PhaseFade::kMain;
+		}
+		break;
+
+	case GameScene::PhaseFade::kFadoOut:
+		fade_->Update();
+		if (fade_->IsFinished()) {
+			//fade_->Stop();
+			audio_->StopAudio(BGMAudio_);
+			finished_ = true;
+		}
+		break;
+	}
+
+	ChangePhase();
 
 	// デバッグカメラの更新
 	debugCamera_->Update();
@@ -200,8 +240,30 @@ void GameScene::Draw() {
 	/// ここに前景スプライトの描画処理を追加できる
 	/// </summary>
 
+	fade_->Draw();
+
 	// スプライト描画後処理
 	Sprite::PostDraw();
 
 #pragma endregion
+}
+
+void GameScene::ChangePhase() {
+
+	switch (phase_) {
+	case Phase::kPlay:
+
+		// 自キャラの状態をチェック
+		if (Input::GetInstance()->PushKey(DIK_4)) {
+			// 死亡フェーズに切り替え
+			phase_ = Phase::kScore;
+		}
+		break;
+
+	case Phase::kScore:
+
+		// デス演出フェーズの処理
+		finished_ = true;
+		break;
+	}
 }

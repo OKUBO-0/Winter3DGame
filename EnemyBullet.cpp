@@ -2,15 +2,12 @@
 #include "MathUtilityEx.h"
 #include <cassert>
 
-void EnemyBullet::Initialize(Model* model, const Vector3& position, const Vector3& velocity) {
+void EnemyBullet::Initialize(const Vector3& position, const Vector3& velocity) {
 
 	// NULLポインタチェック
 	assert(model);
 
-	// モデル
-	model_ = model;
-	// テクスチャの読み込み
-	textureHandle_ = TextureManager::Load("black1x1.png");
+	model_ = Model::CreateFromOBJ("enemyAttack", true);
 
 	// ワールド変換の初期化
 	worldTransform_.Initialize();
@@ -51,5 +48,5 @@ void EnemyBullet::Update() {
 void EnemyBullet::Draw(const Camera& camera) {
 
 	// モデルの描画
-	model_->Draw(worldTransform_, camera, textureHandle_);
+	model_->Draw(worldTransform_, camera);
 }

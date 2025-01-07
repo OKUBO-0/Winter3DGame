@@ -47,7 +47,7 @@ void Player::Attack() {
 
 		// 弾を生成し、初期化
 		PlayerBullet* newBullet = new PlayerBullet();
-		newBullet->Initialize(model_, worldTransform_.translation_, velocity);
+		newBullet->Initialize(worldTransform_.translation_, velocity);
 
 		// 弾を登録する
 		bullets_.push_back(newBullet);
@@ -95,10 +95,12 @@ void Player::Update() {
 	// アフィン変換
 	worldTransform_.matWorld_ = MakeAffineMatrix(worldTransform_.scale_, worldTransform_.rotation_, worldTransform_.translation_);
 
+#ifdef _DEBUG
 	// キャラクターの座標を画面表示する処理
 	ImGui::Begin("window");
 	ImGui::SliderFloat3("Player", &worldTransform_.translation_.x, -20.0f, 20.0f);
 	ImGui::End();
+#endif // _DEBUG
 
 	// 移動限界座標
 	const float kMoveLimitX = 30.0f;
@@ -128,7 +130,7 @@ void Player::Update() {
 void Player::Draw(Camera& camera) {
 
 	// 3Dモデルを描画
-	model_->Draw(worldTransform_, camera, textureHandle_);
+	model_->Draw(worldTransform_, camera);
 
 	// 弾の描画
 	for (PlayerBullet* bullet : bullets_) {

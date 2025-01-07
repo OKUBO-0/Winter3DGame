@@ -2,15 +2,12 @@
 #include "MathUtilityEx.h"
 #include <cassert>
 
-void PlayerBullet::Initialize(Model* model, const Vector3& position, const Vector3& velocity) {
+void PlayerBullet::Initialize(const Vector3& position, const Vector3& velocity) {
 
 	// NULLポインタチェック
 	assert(model);
 
-	// モデル
-	model_ = model;
-	// テクスチャの読み込み
-	textureHandle_ = TextureManager::Load("black1x1.png");
+	model_ = Model::CreateFromOBJ("playerAttack", true);
 
 	worldTransform_.Initialize();
 	worldTransform_.translation_ = position;
@@ -50,5 +47,5 @@ void PlayerBullet::Update() {
 void PlayerBullet::Draw(const Camera& camera) {
 
 	// モデルの描画
-	model_->Draw(worldTransform_, camera, textureHandle_);
+	model_->Draw(worldTransform_, camera);
 }

@@ -23,7 +23,7 @@ void Enemy::Initialize(Model* model, uint32_t textureHandle) {
 	timer = 0.0f;
 
 	// 初期座標
-	worldTransform_.translation_ = Vector3(20.0f, 0.0f, 20.0f);
+	worldTransform_.translation_ = Vector3(0.0f, 0.0f, 30.0f);
 }
 
 void Enemy::Approach() {
@@ -79,7 +79,7 @@ void Enemy::Fire() {
 
 		// 弾を生成し、初期化
 		EnemyBullet* newEnemyBullet = new EnemyBullet();
-		newEnemyBullet->Initialize(model_, worldTransform_.translation_, velocity);
+		newEnemyBullet->Initialize(worldTransform_.translation_, velocity);
 
 		// 弾を登録する
 		enemyBullets_.push_back(newEnemyBullet);
@@ -128,7 +128,7 @@ void Enemy::Update() {
 void Enemy::Draw(Camera& camera) {
 
 	// 3Dモデルを描画
-	model_->Draw(worldTransform_, camera, textureHandle_);
+	model_->Draw(worldTransform_, camera);
 
 	for (EnemyBullet* enemyBullet : enemyBullets_) {
 		enemyBullet->Draw(camera);
